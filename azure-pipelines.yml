@@ -1,0 +1,68 @@
+# File: azure-pipelines.yml
+# Build Name / Format
+name: DemoQATestAutomation-$(date:yyyyMMdd)$(rev:.r)
+
+resources:
+  repositories:
+    - repository: DemoQATestAutomation
+      type: github
+      name: DemoTest/DemoQATestAutomation
+      ref: master
+      endpoint: github.com_savidighade
+
+parameters:
+ - name: image
+   displayName: Pool Image
+   type: string
+   default: windows-latest
+   values:
+   - windows-latest
+   - vs2017-win2016
+   - windows-2019
+ - name: BrowserType
+   displayName: Browser Type
+   type: string
+   default: All
+   values:
+   - Chrome
+   - Firefox
+   - All
+ - name: LoginMethod
+   displayName: Login Type
+   type: string
+   default: CloudIdentity
+   values:
+   - CloudIdentity
+   - FederatedIdentity
+   - PassThrough
+
+jobs:
+- job: "DemoQATestFrameworkAutomation"
+  pool:
+    vmImage: ${{ parameters.image }}
+    demands:
+    - msbuild
+    - visualstudio
+    - vstest
+  variables:
+  - name: PortalUrl
+    value: https://demoqa.com
+  - name: PrivateMode
+    value: true
+  - name: TestUrlFileName 
+    value: TestURLs.json
+  - name: LocalProjectName
+    value: DemoQATestAutomation
+
+  steps:
+  - checkout: self
+  - checkout: DemoQATestAutomation
+  - template: frameworksteps.yml@DemoQATestAutomation
+    parameters:
+      OnlineUsername: $(OnlineUsername)
+      OnlinePassword: $(OnlinePassword)
+      OnlineUrl: $(PortalUrl)
+      BrowserType: ${{ parameters.BrowserType }}
+      TestURLFilePath: $(Build.SourcesDirectory)\$(LocalProjectName)\Samples\$(TestUrlFileName)
+      UsePrivateMode: $(PrivateMode)
+      LoginMethod: ${{ parameters.LoginMethod }}
